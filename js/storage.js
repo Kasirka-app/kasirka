@@ -4,7 +4,7 @@ import { parseDate } from './schedule.js';
 
 const KEY = 'kasirka';
 const BACKUP_DAYS = 30;
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const DEFAULT_SETTINGS = {
   schemaVersion: SCHEMA_VERSION, lang: 'cs', currency: 'CZK', theme: 'dark',
@@ -15,12 +15,21 @@ export const DEFAULT_SETTINGS = {
   defaultShift: { from: '10:00', to: '22:00' },
   schedule: { anchorMonday: '2026-09-21', anchorType: 'short',
               short: [3, 4], long: [1, 2, 5, 6, 0] },
-  sickDeductHours: 12, holidayCountry: 'CZ',
+  // 'hourly' = mzda podle odpracovaných hodin, 'fixed' = pevný měsíční základ
+  payType: 'hourly',
+  // Délka směny pro srážku za nemoc (fixed) a placenou dovolenou (hourly)
+  absenceHours: 12, holidayCountry: 'CZ',
   lastBackupAt: null
 };
 
 // MIGRATIONS[n] převádí data z verze n na n + 1.
-const MIGRATIONS = {};
+const MIGRATIONS = {
+  // v2: typ mzdy (dosavadní data = pevný základ), sickDeductHours → absenceHours
+  1: data => {
+    const { sickDeductHours, ...settings } = data.settings;
+    return { ...data, settings: { ...settings, payType: 'fixed', absenceHours: sickDeductHours ?? 12 } };
+  }
+};
 
 export function migrate(data) {
   let v = data.settings.schemaVersion ?? 0;

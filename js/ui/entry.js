@@ -4,7 +4,7 @@ import { dayBreakdown, dayFlags, lateHours } from '../calc.js';
 import { addDays, parseDate, todayISO } from '../schedule.js';
 
 const TYPES = ['work', 'vacation', 'sick', 'swapped'];
-const PARTS = ['tips', 'companies', 'late', 'weekend', 'holiday', 'extra', 'sick'];
+const PARTS = ['base', 'tips', 'companies', 'late', 'weekend', 'holiday', 'extra', 'sick']; // base je nenulový jen u hodinové mzdy
 const NIGHT_UNTIL_HOUR = 6; // zápis do 6:00 ráno patří ke včerejší směně
 
 let savedIso = null; // pro hlášku „Uloženo“ po překreslení
@@ -40,6 +40,7 @@ export function render(root, ctx, param) {
   const draft = saved ? structuredClone(saved) : newDay(days, settings);
   draft.companies ??= [];
   const flags = dayFlags(iso, settings);
+  const hourly = settings.payType === 'hourly';
   const autoLate = () => lateHours(draft.from, draft.to, settings.lateFrom);
   let lateEdited = draft.lateHours != null && draft.lateHours !== autoLate();
 
@@ -156,13 +157,15 @@ export function render(root, ctx, param) {
       $('#chips').innerHTML = `
         <button data-chip="holiday" class="chip ${holidayOn ? 'on' : ''}" style="--c: var(--c-holiday)">
           ${t('part.holiday')}${holidayOn ? ' ' + signed(pay) : ''}</button>
-        <button data-chip="extra" class="chip ${extraOn ? 'on' : ''}" style="--c: var(--c-extra)">
-          ${extraOn ? t('part.extra') + ' ' + signed(pay) : extraOff}</button>`;
+        ${hourly ? '' : `<button data-chip="extra" class="chip ${extraOn ? 'on' : ''}" style="--c: var(--c-extra)">
+          ${extraOn ? t('part.extra') + ' ' + signed(pay) : extraOff}</button>`}`;
     }
 
-    const hint = { vacation: 'entry.hint.vacation', swapped: 'entry.hint.swapped',
-      sick: flags.scheduled ? 'entry.hint.sick' : 'entry.hint.sickOff' }[draft.type];
-    $('#hint').textContent = hint ? t(hint, { h: settings.sickDeductHours }) : '';
+    const absent = flags.scheduled ? '' : 'Off'; // mimo rozvrh se nic neplatí ani nestrhává
+    const hint = { swapped: 'entry.hint.swapped',
+      vacation: hourly ? 'entry.hint.vacationHourly' + absent : 'entry.hint.vacation',
+      sick: hourly ? 'entry.hint.sickHourly' : 'entry.hint.sick' + absent }[draft.type];
+    $('#hint').textContent = hint ? t(hint, { h: settings.absenceHours }) : '';
 
     $('#total').textContent = signed(b.total);
     $('#parts').innerHTML = PARTS.filter(k => b[k]).map(k =>

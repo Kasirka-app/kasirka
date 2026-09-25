@@ -5,6 +5,7 @@ import { addDays, addMonths, parseDate, todayISO, weekType, setWeekType } from '
 
 const THEMES = ['dark', 'light', 'system'];
 const RATE_KEYS = ['baseSalary', 'hourlyRate', 'lateRate', 'weekendRate'];
+const PAY_TYPES = ['hourly', 'fixed'];
 const WEEKDAYS = [1, 2, 3, 4, 5, 6, 0]; // pondělím počínaje
 const FIRST_FROM = '2000-01'; // první období sazeb platí „od začátku“
 
@@ -42,7 +43,7 @@ export function render(root, ctx) {
           : `<label class="field"><strong>${t('rates.from')}</strong><input type="month" data-rate="${i}" data-key="from" value="${r.from}"></label>
              <button class="icon-btn danger" data-delete-rate="${i}" aria-label="${t('rates.delete')}">×</button>`}
       </div>
-      ${RATE_KEYS.map(k => numField(t('rates.' + k), `data-rate="${i}" data-key="${k}"`, r[k])).join('')}
+      ${RATE_KEYS.filter(k => k !== 'baseSalary' || s.payType === 'fixed').map(k => numField(t('rates.' + k), `data-rate="${i}" data-key="${k}"`, r[k])).join('')}
     </div>`).reverse().join(''); // nejnovější nahoře
 
   const weekRow = type => `
@@ -65,11 +66,15 @@ export function render(root, ctx) {
     </div>
 
     <h2>${t('settings.rates')}</h2>
+    <div class="card">
+      <div class="field-label">${t('settings.payType')}</div>
+      ${seg('paytype', PAY_TYPES, s.payType, 'payType.')}
+    </div>
     ${rateCards}
     <button class="btn-secondary" id="add-rate">${t('rates.addRaise')}</button>
     <div class="card">
       <label class="field"><span>${t('settings.lateFrom')}</span><input type="time" id="late-from" value="${s.lateFrom}"></label>
-      ${numField(t('settings.sickHours'), 'id="sick-hours"', s.sickDeductHours)}
+      ${numField(t('settings.absenceHours'), 'id="absence-hours"', s.absenceHours)}
     </div>
 
     <h2>${t('settings.schedule')}</h2>
@@ -110,6 +115,7 @@ export function render(root, ctx) {
     if (!b) return;
     const d = b.dataset;
     if (d.theme) s.theme = d.theme;
+    else if (d.paytype) s.payType = d.paytype;
     else if (d.weektype) s.schedule = setWeekType(s.schedule, today, d.weektype);
     else if (d.week) {
       const days = s.schedule[d.week], wd = Number(d.wd);
@@ -136,9 +142,9 @@ export function render(root, ctx) {
         if (d.key === 'hourlyRate') r.weekendRate = Math.round(v * 10) / 100; // víkend = 10 % hodinovky
       }
     } else if (el.id === 'late-from' && el.value) s.lateFrom = el.value;
-    else if (el.id === 'sick-hours') {
+    else if (el.id === 'absence-hours') {
       const v = parseNum(el.value);
-      if (v >= 0) s.sickDeductHours = v;
+      if (v >= 0) s.absenceHours = v;
     } else if (d.shift && el.value) s.defaultShift = { ...s.defaultShift, [d.shift]: el.value };
     else return;
     ctx.save();

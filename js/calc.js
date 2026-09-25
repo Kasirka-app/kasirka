@@ -70,11 +70,18 @@ export function dayBreakdown(iso, day, settings) {
   const rate = rates.hourlyRate;
   const flags = dayFlags(iso, settings);
 
+  const hourly = settings.payType === 'hourly';
+
+  // Nepřítomnost se řeší jen v plánovaný den.
   if (day.type === 'sick') {
-    if (flags.scheduled) r.sick = -settings.sickDeductHours * rate;
+    if (flags.scheduled && !hourly) r.sick = -settings.absenceHours * rate;
     return finish(r);
   }
-  if (day.type !== 'work') return finish(r); // dovolená, výměna
+  if (day.type === 'vacation') {
+    if (flags.scheduled && hourly) r.base = settings.absenceHours * rate; // pevný základ dovolenou už obsahuje
+    return finish(r);
+  }
+  if (day.type !== 'work') return finish(r); // výměna
 
   const hours = shiftHours(day.from, day.to);
   const companies = day.companies ?? [];
@@ -85,7 +92,9 @@ export function dayBreakdown(iso, day, settings) {
   if (companies.length) r.late = Math.round((day.lateHours ?? 0) * rates.lateRate);
   r.weekend = weekendHours(iso, day.from, day.to) * rates.weekendRate;
   if (day.holidayOverride ?? flags.holiday) r.holiday = hours * rate;
-  if (day.extraOverride ?? !flags.scheduled) r.extra = hours * rate;
+  // Hodinová mzda: každá hodina v základu, extra den nemá smysl. Pevný základ: směna mimo rozvrh = extra.
+  if (hourly) r.base = hours * rate;
+  else if (day.extraOverride ?? !flags.scheduled) r.extra = hours * rate;
   return finish(r);
 }
 
@@ -100,7 +109,7 @@ export function monthBreakdown(ym, days, settings) {
     for (const k of [...KEYS, 'hours']) r[k] += d[k];
     if (day.type === 'work') shifts++;
   }
-  if (entries.length) r.base = ratesFor(ym, settings).baseSalary;
+  if (entries.length && settings.payType === 'fixed') r.base = ratesFor(ym, settings).baseSalary;
   return { ...finish(r), shifts };
 }
 
