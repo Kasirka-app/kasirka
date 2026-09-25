@@ -14,6 +14,9 @@ const screenEl = document.getElementById('screen');
 const tabbar = document.getElementById('tabbar');
 const backupBanner = document.getElementById('backup-banner');
 let lastHash = null;
+let dirty = false;       // uživatel něco píše a ještě neuložil
+let updateReady = false; // nová verze čeká na obnovení
+document.addEventListener('input', () => { dirty = true; });
 
 // Kontext předávaný obrazovkám: data + uložení + překreslení.
 const ctx = {
@@ -33,6 +36,8 @@ function applySettings() {
 }
 
 function render() {
+  if (updateReady) return location.reload();
+  dirty = false;
   const [name, param] = location.hash.slice(1).split('/'); // např. #entry/2026-09-28
   const screen = SCREENS[name] ? name : DEFAULT_SCREEN;
   tabbar.querySelectorAll('a').forEach(a => {
@@ -54,5 +59,17 @@ applySettings();
 render();
 
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js');
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    // Při návratu do aplikace zkontrolovat novou verzi.
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update(); });
+  });
+
+  // Nová verze převzala řízení → jednou obnovit, ať se hned ukáže. Když je
+  // rozepsaný formulář, počkat na uložení / přechod jinam (render), ať se nic neztratí.
+  const hadController = !!navigator.serviceWorker.controller; // při první instalaci neobnovovat
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) return;
+    if (dirty) updateReady = true;
+    else location.reload();
+  });
 }
