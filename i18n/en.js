@@ -24,6 +24,10 @@ export default {
     'part.extra': 'Extra day',
     'part.sick': 'Deduction',
 
+    'share.button': 'Recommend to a colleague',
+    'share.text': 'Try Kasírka – an app for waiters that calculates your pay including tips and bonuses. Open the link in your browser and tap “Add to Home Screen”.',
+    'share.copied': 'Link copied – send it to a colleague.',
+
     'welcome.title': 'Welcome to Kasírka!',
     'welcome.text': 'First set your salary, bonuses and schedule, otherwise the numbers won\'t be right.',
     'welcome.button': 'Open Settings',

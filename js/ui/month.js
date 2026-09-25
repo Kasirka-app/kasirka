@@ -2,6 +2,7 @@
 import { t, formatMoney, formatDate, formatNumber } from '../i18n.js';
 import { monthBreakdown, dayBreakdown, dayFlags, missingDays, monthHours } from '../calc.js';
 import { addDays, addMonths, parseDate, todayISO, weekday } from '../schedule.js';
+import { shareApp } from './share.js';
 
 const PARTS = ['base', 'tips', 'companies', 'late', 'weekend', 'holiday', 'extra', 'sick'];
 const DOTS = ['work', 'extra', 'holiday', 'company', 'vacation', 'sick', 'swapped', 'missing'];
@@ -98,11 +99,14 @@ export function render(root, ctx, param) {
             <strong class="bonus-amount">${formatMoney(c.bonus ?? 0)}</strong>
           </li>`).join('')}
       </ul>
-    </div>` : ''}`;
+    </div>` : ''}
+
+    <button class="btn-link" id="share">${t('share.button')}</button>`;
 
   root.querySelectorAll('[data-go]').forEach(btn => btn.addEventListener('click', () => {
     location.hash = `#month/${addMonths(ym, Number(btn.dataset.go))}`;
   }));
+  root.querySelector('#share').addEventListener('click', shareApp);
   root.querySelector('.calendar').addEventListener('click', e => {
     const iso = e.target.closest('[data-iso]')?.dataset.iso;
     if (iso) location.hash = `#entry/${iso}`;

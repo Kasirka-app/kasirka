@@ -24,6 +24,10 @@ export default {
     'part.extra': 'Extra den',
     'part.sick': 'Srážka',
 
+    'share.button': 'Doporuč kolegovi',
+    'share.text': 'Zkus Kasírku – appka pro číšníky, spočítá výplatu i s dýškem a příplatky. Otevři odkaz v prohlížeči a dej „Přidat na plochu“.',
+    'share.copied': 'Odkaz je zkopírovaný – pošli ho kolegovi.',
+
     'welcome.title': 'Vítej v Kasírce!',
     'welcome.text': 'Nejdřív si nastav mzdu, příplatky a rozvrh, jinak nebude výpočet sedět.',
     'welcome.button': 'Otevřít Nastavení',

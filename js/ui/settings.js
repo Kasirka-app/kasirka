@@ -2,6 +2,7 @@
 import { t, LANGUAGES, formatDate, formatNumber } from '../i18n.js';
 import { exportJSON, importJSON, clearAll, load } from '../storage.js';
 import { addDays, addMonths, parseDate, todayISO, weekType, setWeekType } from '../schedule.js';
+import { shareApp } from './share.js';
 
 const THEMES = ['dark', 'light', 'system'];
 const RATE_KEYS = ['baseSalary', 'hourlyRate', 'lateRate', 'weekendRate'];
@@ -64,6 +65,7 @@ export function render(root, ctx) {
       <div class="field-label">${t('settings.theme')}</div>
       ${seg('theme', THEMES, s.theme, 'theme.')}
     </div>
+    <button class="btn-secondary" id="share">${t('share.button')}</button>
 
     <h2>${t('settings.rates')}</h2>
     <div class="card">
@@ -108,6 +110,7 @@ export function render(root, ctx) {
   const wrap = $('#settings'); // posluchače na obsah, ne na #screen – ten zůstává mezi překresleními
 
   $('#lang').addEventListener('change', e => { s.lang = e.target.value; ctx.save(); });
+  $('#share').addEventListener('click', shareApp);
 
   // Tlačítka: motiv, typ týdne, dny rozvrhu, mazání období.
   wrap.addEventListener('click', e => {
