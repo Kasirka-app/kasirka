@@ -245,6 +245,7 @@ h2 { font-size: 18px; margin: 20px 4px 8px; }
 
 .summary { text-align: center; }
 .big-number { font-size: 44px; font-weight: 800; color: var(--accent); letter-spacing: -.5px; }
+.hours-left { margin-top: 4px; font-weight: 600; }
 .missing-note { margin-top: 8px; color: var(--accent); font-size: 14px; }
 
 .stack-bar {

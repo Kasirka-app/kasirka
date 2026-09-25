@@ -150,3 +150,17 @@ export function periodStats(yms, days, settings) {
     companyBonus: sum('companies')
   };
 }
+
+// Hodiny v měsíci: plán podle rozvrhu (dny × délka směny) a odpracováno
+// (směny + dovolená v plánovaný den, ta se počítá jako odpracovaná).
+export function monthHours(ym, days, settings) {
+  let planned = 0, done = 0;
+  for (let iso = ym + '-01'; iso.startsWith(ym); iso = addDays(iso, 1)) {
+    const scheduled = isScheduled(iso, settings.schedule);
+    const day = days[iso];
+    if (scheduled) planned += settings.absenceHours;
+    if (day?.type === 'work') done += shiftHours(day.from, day.to);
+    if (day?.type === 'vacation' && scheduled) done += settings.absenceHours;
+  }
+  return { planned, done };
+}

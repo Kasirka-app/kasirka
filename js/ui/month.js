@@ -1,6 +1,6 @@
 // Obrazovka Měsíc – souhrn, rozpad, kalendář, firmy. Měsíc je v URL: #month/2026-09.
 import { t, formatMoney, formatDate, formatNumber } from '../i18n.js';
-import { monthBreakdown, dayBreakdown, dayFlags, missingDays } from '../calc.js';
+import { monthBreakdown, dayBreakdown, dayFlags, missingDays, monthHours } from '../calc.js';
 import { addDays, addMonths, parseDate, todayISO, weekday } from '../schedule.js';
 
 const PARTS = ['base', 'tips', 'companies', 'late', 'weekend', 'holiday', 'extra', 'sick'];
@@ -15,6 +15,8 @@ export function render(root, ctx, param) {
   const ym = /^\d{4}-\d{2}$/.test(param) ? param : today.slice(0, 7);
   const m = monthBreakdown(ym, days, settings);
   const missing = missingDays(ym, days, settings, today);
+  const hrs = monthHours(ym, days, settings);
+  const left = hrs.planned - hrs.done;
 
   const title = formatDate(parseDate(ym + '-01'), { month: 'long', year: 'numeric', ...utc });
   const monthDays = [];
@@ -51,7 +53,8 @@ export function render(root, ctx, param) {
 
     <div class="card summary">
       <div class="big-number">${formatMoney(m.total)}</div>
-      <div class="muted">${t('month.hoursShifts', { h: formatNumber(m.hours, 1), n: m.shifts })}</div>
+      <div class="muted">${t('month.hoursShifts', { h: formatNumber(hrs.done, 1), plan: formatNumber(hrs.planned, 1), n: m.shifts })}</div>
+      ${hrs.planned ? `<div class="hours-left">${left > 0 ? t('month.hoursLeft', { h: formatNumber(left, 1) }) : left < 0 ? t('month.hoursOver', { h: formatNumber(-left, 1) }) : t('month.hoursDone')}</div>` : ''}
       ${missing.length ? `<div class="missing-note">${t('month.missing', { n: missing.length })}</div>` : ''}
     </div>
 
