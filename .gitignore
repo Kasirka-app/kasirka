@@ -1,0 +1,3 @@
+.claude/
+# Testy obsahují skutečné sazby – jen lokálně
+tests/
