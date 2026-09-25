@@ -11,15 +11,15 @@
   --shadow: 0 2px 10px rgb(0 0 0 / .35);
 
   /* Složky rozpadu výdělku – stejné barvy v celé aplikaci.
-     Pořadí = pořadí ve skládaném sloupci; ověřeno validátorem palety
-     (odlišitelnost sousedů i pro barvoslepé), světlý a tmavý motiv zvlášť. */
+     Ověřeno validátorem palety pro VŠECHNY dvojice (ne jen sousedy) při protanopii
+     i deuteranopii; složka má v obou motivech stejný odstín, liší se světlostí. */
   --c-base: #3987e5;
   --c-tips: #c98500;
   --c-companies: #199e70;
-  --c-late: #d95926;
-  --c-weekend: #9085e9;
-  --c-holiday: #d55181;
-  --c-extra: #008300;
+  --c-late: #e8b6f3;
+  --c-weekend: #bbefb0;
+  --c-holiday: #882e9b;
+  --c-extra: #864e18;
   --c-sick: #e66767;
 
   /* Tečka „směna“ v kalendáři (ostatní typy používají barvy složek) */
@@ -43,10 +43,10 @@
   --c-base: #2a78d6;
   --c-tips: #eda100;
   --c-companies: #1baf7a;
-  --c-late: #eb6834;
-  --c-weekend: #4a3aa7;
-  --c-holiday: #e87ba4;
-  --c-extra: #008300;
+  --c-late: #b484bf;
+  --c-weekend: #0f3e02;
+  --c-holiday: #69037b;
+  --c-extra: #834b14;
   --c-sick: #e34948;
   --c-work: #5c534a;
   color-scheme: light;
@@ -66,10 +66,10 @@
     --c-base: #2a78d6;
     --c-tips: #eda100;
     --c-companies: #1baf7a;
-    --c-late: #eb6834;
-    --c-weekend: #4a3aa7;
-    --c-holiday: #e87ba4;
-    --c-extra: #008300;
+    --c-late: #b484bf;
+    --c-weekend: #0f3e02;
+    --c-holiday: #69037b;
+    --c-extra: #834b14;
     --c-sick: #e34948;
     --c-work: #5c534a;
     color-scheme: light;
@@ -266,7 +266,9 @@ h2 { font-size: 18px; margin: 20px 4px 8px; }
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
 }
 .cal-day.today { box-shadow: inset 0 0 0 1.5px var(--accent); }
-.cal-day.is-holiday > span:first-child { color: var(--c-holiday); font-weight: 700; }
+.cal-day.is-holiday > span:first-child {
+  font-weight: 700; text-decoration: underline 2px var(--c-holiday); text-underline-offset: 3px;
+}
 .dots { display: flex; gap: 2px; min-height: 6px; }
 
 .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
