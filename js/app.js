@@ -54,6 +54,14 @@ function render() {
   SCREENS[screen].render(screenEl, ctx, param);
 }
 
+// Při psaní (otevřená klávesnice / výběr času) nesmí spodní lišty zakrývat pole.
+// focusout → chvíli počkat, přechod na další pole nemá lišty rozblikat.
+const isField = el => el?.matches?.('input, textarea, select');
+document.addEventListener('focusin', e => { if (isField(e.target)) document.body.classList.add('typing'); });
+document.addEventListener('focusout', () => setTimeout(() => {
+  document.body.classList.toggle('typing', isField(document.activeElement));
+}, 100));
+
 window.addEventListener('hashchange', render);
 applySettings();
 render();

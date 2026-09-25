@@ -367,3 +367,8 @@ h2 { font-size: 18px; margin: 20px 4px 8px; }
 .welcome { border: 1px solid var(--accent); }
 .welcome p { margin: 6px 0 12px; color: var(--muted); }
 .welcome .btn-primary { display: flex; align-items: center; justify-content: center; text-decoration: none; }
+
+/* ---------- Psaní: klávesnice nesmí mít pole schovaná pod lištami ---------- */
+body.typing .tabbar { display: none; }
+body.typing .total-bar { position: static; }
+body.typing .screen { padding-bottom: calc(env(safe-area-inset-bottom) + 24px); }
