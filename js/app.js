@@ -45,6 +45,7 @@ function render() {
   });
   backupBanner.hidden = screen === 'settings' || !backupDue(ctx.data, todayISO());
   screenEl.replaceChildren();
+  screenEl.style.minHeight = ''; // Měsíc si ji při listování nastavuje sám
   if (screen !== lastScreen) { // animace jen při přechodu mezi obrazovkami (ne při uložení ani změně dne/měsíce)
     lastScreen = screen;
     screenEl.classList.remove('enter');

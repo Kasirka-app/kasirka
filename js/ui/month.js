@@ -10,6 +10,10 @@ const DOTS = ['work', 'extra', 'holiday', 'company', 'vacation', 'sick', 'swappe
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
 const utc = { timeZone: 'UTC' };
 
+// Pozice kalendáře na obrazovce při listování měsíci – po překreslení ho vrátíme na stejné
+// místo, aby stránka neposkočila, když mají karty nad ním jinou výšku.
+let keepCalendarAt = null;
+
 export function render(root, ctx, param) {
   const { settings, days } = ctx.data;
   const today = todayISO();
@@ -141,11 +145,18 @@ export function render(root, ctx, param) {
   // je pak prostřední panel, takže přechod je plynulý.
   const strip = root.querySelector('.cal-strip');
   strip.scrollLeft = strip.clientWidth;
+  if (keepCalendarAt !== null) {
+    root.querySelector('.stack-bar')?.style.setProperty('animation', 'none'); // neproblikávat při listování
+    root.style.minHeight = keepCalendarAt.height + 'px'; // kratší měsíc nesmí stránku zkrátit – jinak nejde posunout
+    window.scrollBy(0, strip.getBoundingClientRect().top - keepCalendarAt.top);
+    keepCalendarAt = null;
+  }
   const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
   let touching = false, settleTimer, switched = false;
   const switchTo = n => {
     if (switched) return;
     switched = true;
+    keepCalendarAt = { top: strip.getBoundingClientRect().top, height: root.offsetHeight };
     location.hash = `#month/${addMonths(ym, n)}`;
   };
   const settle = () => {
