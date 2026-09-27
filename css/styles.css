@@ -379,8 +379,5 @@ body.typing .screen { padding-bottom: calc(env(safe-area-inset-bottom) + 24px); 
 .cal-week small { font-size: 10px; color: var(--muted); }
 .cal-day.is-work { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 
-.quick-check { position: relative; display: flex; flex-direction: column; gap: 2px; }
-/* Nativní výběr data přes celou kartu – jedno ťuknutí otevře kalendář. */
-.quick-check input { position: absolute; inset: 0; opacity: 0; width: 100%; }
-.quick-check strong { font-size: 24px; }
-.quick-check strong.works { color: var(--accent); }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin: -6px -6px 6px; }
+.cal-nav .month-title { font-size: 17px; }

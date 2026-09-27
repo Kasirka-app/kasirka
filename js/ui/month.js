@@ -1,7 +1,7 @@
 // Obrazovka Měsíc – souhrn, rozpad, kalendář, firmy. Měsíc je v URL: #month/2026-09.
 import { t, formatMoney, formatDate, formatNumber } from '../i18n.js';
 import { monthBreakdown, dayBreakdown, dayFlags, missingDays, monthHours } from '../calc.js';
-import { addDays, addMonths, parseDate, todayISO, mondayOf, weekType, isoWeek, isScheduled } from '../schedule.js';
+import { addDays, addMonths, parseDate, todayISO, mondayOf, weekType, isoWeek } from '../schedule.js';
 import { shareApp } from './share.js';
 
 const PARTS = ['base', 'tips', 'companies', 'late', 'weekend', 'holiday', 'extra', 'sick'];
@@ -75,6 +75,11 @@ export function render(root, ctx, param) {
     </div>` : `<div class="card muted">${t('month.empty')}</div>`}
 
     <div class="card">
+      <div class="cal-nav">
+        <button class="icon-btn" data-go="-1" aria-label="${t('month.prev')}">‹</button>
+        <strong class="month-title">${title}</strong>
+        <button class="icon-btn" data-go="1" aria-label="${t('month.next')}">›</button>
+      </div>
       <div class="calendar">
         <span></span>
         ${weekdayNames.map(n => `<span class="cal-head">${n}</span>`).join('')}
@@ -101,13 +106,6 @@ export function render(root, ctx, param) {
       </ul>` : ''}
     </div>
 
-    <label class="card quick-check">
-      <span class="muted">${t('quick.label')}</span>
-      <strong id="quick-result"></strong>
-      <span class="muted" id="quick-detail"></span>
-      <input type="date" id="quick-date" value="${today}" aria-label="${t('quick.label')}">
-    </label>
-
     ${companies.length ? `
     <h2>${t('month.companies')}</h2>
     <div class="card">
@@ -124,24 +122,23 @@ export function render(root, ctx, param) {
 
     <button class="btn-link" id="share">${t('share.button')}</button>`;
 
-  root.querySelectorAll('[data-go]').forEach(btn => btn.addEventListener('click', () => {
-    location.hash = `#month/${addMonths(ym, Number(btn.dataset.go))}`;
-  }));
+  const goMonth = n => { location.hash = `#month/${addMonths(ym, n)}`; };
+  root.querySelectorAll('[data-go]').forEach(btn => btn.addEventListener('click', () => goMonth(Number(btn.dataset.go))));
   root.querySelector('#share').addEventListener('click', shareApp);
-  // Rychlý dotaz: pracuju v den X? (libovolné datum, i mimo zobrazený měsíc)
-  const quick = root.querySelector('#quick-date');
-  const showQuick = () => {
-    const iso = quick.value || today;
-    const works = isScheduled(iso, settings.schedule);
-    root.querySelector('#quick-result').textContent = t(works ? 'quick.work' : 'quick.off');
-    root.querySelector('#quick-result').classList.toggle('works', works);
-    root.querySelector('#quick-detail').textContent =
-      `${formatDate(parseDate(iso), { weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric', ...utc })} · ${t('week.' + weekType(iso, settings.schedule))}`;
-  };
-  quick.addEventListener('change', showQuick);
-  showQuick();
 
-  root.querySelector('.calendar').addEventListener('click', e => {
+  // Přejetí prstem po kalendáři: doleva = další měsíc, doprava = předchozí.
+  const cal = root.querySelector('.calendar');
+  let touch = null;
+  cal.addEventListener('touchstart', e => { touch = e.touches[0]; }, { passive: true });
+  cal.addEventListener('touchend', e => {
+    if (!touch) return;
+    const dx = e.changedTouches[0].clientX - touch.clientX;
+    const dy = e.changedTouches[0].clientY - touch.clientY;
+    touch = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) goMonth(dx < 0 ? 1 : -1);
+  });
+
+  cal.addEventListener('click', e => {
     const iso = e.target.closest('[data-iso]')?.dataset.iso;
     if (iso) location.hash = `#entry/${iso}`;
   });
