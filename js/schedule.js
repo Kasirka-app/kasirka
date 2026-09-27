@@ -51,3 +51,10 @@ export function addMonths(ym, n) {
   const [y, m] = ym.split('-').map(Number);
   return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7);
 }
+
+// ISO číslo týdne – jen informativně v kalendáři. Typ týdne se podle něj NEpočítá
+// (rok může mít 53 týdnů a parita by se na přelomu roku rozbila).
+export function isoWeek(iso) {
+  const thursday = addDays(mondayOf(iso), 3);
+  return Math.floor((parseDate(thursday) - parseDate(thursday.slice(0, 4) + '-01-01')) / (7 * DAY_MS)) + 1;
+}

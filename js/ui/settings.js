@@ -1,7 +1,8 @@
 // Obrazovka Nastavení – jazyk, motiv, sazby (historie), rozvrh, výchozí směna, záloha.
 import { t, LANGUAGES, formatDate, formatNumber } from '../i18n.js';
 import { exportJSON, importJSON, clearAll, load } from '../storage.js';
-import { addDays, addMonths, parseDate, todayISO, weekType, setWeekType } from '../schedule.js';
+import { addDays, addMonths, parseDate, todayISO, weekType, setWeekType, mondayOf } from '../schedule.js';
+import { buildICS } from '../ics.js';
 import { shareApp } from './share.js';
 
 const THEMES = ['dark', 'light', 'system'];
@@ -83,8 +84,19 @@ export function render(root, ctx) {
     <div class="card">
       <div class="field-label">${t('schedule.thisWeek')}</div>
       ${seg('weektype', ['short', 'long'], weekType(today, s.schedule), 'schedule.')}
+      <label class="field"><span>${t('schedule.anchor')}</span>
+        <input type="date" id="anchor-date" value="${s.schedule.anchorMonday}"></label>
+      ${seg('anchortype', ['long', 'short'], s.schedule.anchorType, 'schedule.')}
       ${weekRow('short')}
       ${weekRow('long')}
+    </div>
+
+    <h2>${t('ics.section')}</h2>
+    <div class="card">
+      <label class="field"><span>${t('ics.months')}</span>
+        <input type="text" inputmode="numeric" id="ics-months" value="12" autocomplete="off"></label>
+      <p class="muted hint">${t('ics.hint')}</p>
+      <button class="btn-primary" id="ics-export">${t('ics.button')}</button>
     </div>
 
     <h2>${t('settings.defaultShift')}</h2>
@@ -120,6 +132,7 @@ export function render(root, ctx) {
     if (d.theme) s.theme = d.theme;
     else if (d.paytype) s.payType = d.paytype;
     else if (d.weektype) s.schedule = setWeekType(s.schedule, today, d.weektype);
+    else if (d.anchortype) s.schedule = { ...s.schedule, anchorType: d.anchortype };
     else if (d.week) {
       const days = s.schedule[d.week], wd = Number(d.wd);
       s.schedule[d.week] = days.includes(wd) ? days.filter(x => x !== wd) : [...days, wd];
@@ -144,7 +157,8 @@ export function render(root, ctx) {
         r[d.key] = v;
         if (d.key === 'hourlyRate') r.weekendRate = Math.round(v * 10) / 100; // víkend = 10 % hodinovky
       }
-    } else if (el.id === 'late-from' && el.value) s.lateFrom = el.value;
+    } else if (el.id === 'anchor-date' && el.value) s.schedule = { ...s.schedule, anchorMonday: mondayOf(el.value) }; // kotva vždy pondělí
+    else if (el.id === 'late-from' && el.value) s.lateFrom = el.value;
     else if (el.id === 'absence-hours') {
       const v = parseNum(el.value);
       if (v >= 0) s.absenceHours = v;
@@ -174,6 +188,12 @@ export function render(root, ctx) {
     }
     s.lastBackupAt = today;
     ctx.save();
+  });
+
+  $('#ics-export').addEventListener('click', () => {
+    const months = Math.min(36, Math.max(1, Math.round(parseNum($('#ics-months').value)) || 12));
+    const ics = buildICS(s.schedule, today, months, { title: t('ics.title'), describe: type => t('week.' + type) });
+    download(new File([ics], `kasirka-prace-${today}.ics`, { type: 'text/calendar' }));
   });
 
   $('#import').addEventListener('click', () => $('#import-file').click());

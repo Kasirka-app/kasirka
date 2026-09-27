@@ -13,7 +13,7 @@ export const DEFAULT_SETTINGS = {
   rates: [{ from: '2000-01', baseSalary: 0, hourlyRate: 0, lateRate: 0, weekendRate: 0 }],
   lateFrom: '22:00',
   defaultShift: { from: '10:00', to: '22:00' },
-  schedule: { anchorMonday: '2026-09-21', anchorType: 'short',
+  schedule: { anchorMonday: '2026-09-28', anchorType: 'long',
               short: [3, 4], long: [1, 2, 5, 6, 0] },
   // 'hourly' = mzda podle odpracovaných hodin, 'fixed' = pevný měsíční základ
   payType: 'hourly',

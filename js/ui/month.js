@@ -1,7 +1,7 @@
 // Obrazovka Měsíc – souhrn, rozpad, kalendář, firmy. Měsíc je v URL: #month/2026-09.
 import { t, formatMoney, formatDate, formatNumber } from '../i18n.js';
 import { monthBreakdown, dayBreakdown, dayFlags, missingDays, monthHours } from '../calc.js';
-import { addDays, addMonths, parseDate, todayISO, weekday } from '../schedule.js';
+import { addDays, addMonths, parseDate, todayISO, mondayOf, weekType, isoWeek, isScheduled } from '../schedule.js';
 import { shareApp } from './share.js';
 
 const PARTS = ['base', 'tips', 'companies', 'late', 'weekend', 'holiday', 'extra', 'sick'];
@@ -40,7 +40,9 @@ export function render(root, ctx, param) {
   // Pondělí jako první den týdne (21. 9. 2026 je pondělí).
   const weekdayNames = [0, 1, 2, 3, 4, 5, 6].map(i =>
     formatDate(parseDate(addDays('2026-09-21', i)), { weekday: 'narrow', ...utc }));
-  const lead = (weekday(monthDays[0]) + 6) % 7;
+  // Řádky kalendáře = týdny od pondělí; u každého štítek D/K podle rozvrhu.
+  const weeks = [];
+  for (let monday = mondayOf(monthDays[0]); monday <= monthDays.at(-1); monday = addDays(monday, 7)) weeks.push(monday);
 
   const companies = monthDays.flatMap(iso => (days[iso]?.type === 'work' ? days[iso].companies ?? [] : [])
     .map(c => ({ ...c, iso })));
@@ -74,18 +76,37 @@ export function render(root, ctx, param) {
 
     <div class="card">
       <div class="calendar">
+        <span></span>
         ${weekdayNames.map(n => `<span class="cal-head">${n}</span>`).join('')}
-        ${'<span></span>'.repeat(lead)}
-        ${monthDays.map(iso => `
-          <button class="cal-day ${iso === today ? 'today' : ''} ${dayFlags(iso, settings).holiday ? 'is-holiday' : ''}" data-iso="${iso}">
-            <span>${Number(iso.slice(8))}</span>
-            <span class="dots">${dots[iso].map(d => `<i class="dot dot-${d}"></i>`).join('')}</span>
-          </button>`).join('')}
+        ${weeks.map(monday => {
+          const type = weekType(monday, settings.schedule);
+          return `
+          <span class="cal-week" title="${t('week.' + type)} · ${t('week.number', { n: isoWeek(monday) })}">
+            <b>${t('week.' + type + 'Short')}</b><small>${isoWeek(monday)}</small>
+          </span>
+          ${[0, 1, 2, 3, 4, 5, 6].map(i => {
+            const iso = addDays(monday, i);
+            if (!iso.startsWith(ym)) return '<span></span>';
+            const flags = dayFlags(iso, settings);
+            return `
+            <button class="cal-day ${iso === today ? 'today' : ''} ${flags.holiday ? 'is-holiday' : ''} ${flags.scheduled ? 'is-work' : ''}" data-iso="${iso}">
+              <span>${Number(iso.slice(8))}</span>
+              <span class="dots">${dots[iso].map(d => `<i class="dot dot-${d}"></i>`).join('')}</span>
+            </button>`;
+          }).join('')}`;
+        }).join('')}
       </div>
       ${usedDots.length ? `<ul class="dot-legend">
         ${usedDots.map(d => `<li><i class="dot dot-${d}"></i>${t('dot.' + d)}</li>`).join('')}
       </ul>` : ''}
     </div>
+
+    <label class="card quick-check">
+      <span class="muted">${t('quick.label')}</span>
+      <strong id="quick-result"></strong>
+      <span class="muted" id="quick-detail"></span>
+      <input type="date" id="quick-date" value="${today}" aria-label="${t('quick.label')}">
+    </label>
 
     ${companies.length ? `
     <h2>${t('month.companies')}</h2>
@@ -107,6 +128,19 @@ export function render(root, ctx, param) {
     location.hash = `#month/${addMonths(ym, Number(btn.dataset.go))}`;
   }));
   root.querySelector('#share').addEventListener('click', shareApp);
+  // Rychlý dotaz: pracuju v den X? (libovolné datum, i mimo zobrazený měsíc)
+  const quick = root.querySelector('#quick-date');
+  const showQuick = () => {
+    const iso = quick.value || today;
+    const works = isScheduled(iso, settings.schedule);
+    root.querySelector('#quick-result').textContent = t(works ? 'quick.work' : 'quick.off');
+    root.querySelector('#quick-result').classList.toggle('works', works);
+    root.querySelector('#quick-detail').textContent =
+      `${formatDate(parseDate(iso), { weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric', ...utc })} · ${t('week.' + weekType(iso, settings.schedule))}`;
+  };
+  quick.addEventListener('change', showQuick);
+  showQuick();
+
   root.querySelector('.calendar').addEventListener('click', e => {
     const iso = e.target.closest('[data-iso]')?.dataset.iso;
     if (iso) location.hash = `#entry/${iso}`;

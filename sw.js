@@ -1,6 +1,6 @@
 // Offline: všechny soubory v cache, cache-first.
 // Při každé změně souborů zvýšit VERSION (a doplnit nové soubory do FILES).
-const VERSION = 'v15';
+const VERSION = 'v16';
 const CACHE = `kasirka-${VERSION}`;
 const FILES = [
   './',
@@ -13,6 +13,7 @@ const FILES = [
   'js/calc.js',
   'js/schedule.js',
   'js/holidays.js',
+  'js/ics.js',
   'js/ui/entry.js',
   'js/ui/month.js',
   'js/ui/compare.js',
