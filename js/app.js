@@ -13,7 +13,7 @@ const DEFAULT_SCREEN = 'entry';
 const screenEl = document.getElementById('screen');
 const tabbar = document.getElementById('tabbar');
 const backupBanner = document.getElementById('backup-banner');
-let lastHash = null;
+let lastScreen = null;
 let dirty = false;       // uživatel něco píše a ještě neuložil
 let updateReady = false; // nová verze čeká na obnovení
 document.addEventListener('input', () => { dirty = true; });
@@ -45,8 +45,8 @@ function render() {
   });
   backupBanner.hidden = screen === 'settings' || !backupDue(ctx.data, todayISO());
   screenEl.replaceChildren();
-  if (location.hash !== lastHash) { // animace jen při přechodu, ne při uložení
-    lastHash = location.hash;
+  if (screen !== lastScreen) { // animace jen při přechodu mezi obrazovkami (ne při uložení ani změně dne/měsíce)
+    lastScreen = screen;
     screenEl.classList.remove('enter');
     void screenEl.offsetWidth; // restart animace přechodu
     screenEl.classList.add('enter');

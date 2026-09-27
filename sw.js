@@ -1,6 +1,6 @@
 // Offline: všechny soubory v cache, cache-first.
 // Při každé změně souborů zvýšit VERSION (a doplnit nové soubory do FILES).
-const VERSION = 'v17';
+const VERSION = 'v18';
 const CACHE = `kasirka-${VERSION}`;
 const FILES = [
   './',

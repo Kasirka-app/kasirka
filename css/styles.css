@@ -381,3 +381,11 @@ body.typing .screen { padding-bottom: calc(env(safe-area-inset-bottom) + 24px); 
 
 .cal-nav { display: flex; align-items: center; justify-content: space-between; margin: -6px -6px 6px; }
 .cal-nav .month-title { font-size: 17px; }
+
+/* Kalendář jede s prstem: 3 měsíce vedle sebe, přichytávání na celý měsíc */
+.cal-strip {
+  display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.cal-strip::-webkit-scrollbar { display: none; }
+.cal-panel { flex: 0 0 100%; scroll-snap-align: start; scroll-snap-stop: always; }

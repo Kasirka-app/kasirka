@@ -20,19 +20,22 @@ export function render(root, ctx, param) {
   const left = hrs.planned - hrs.done;
 
   const title = formatDate(parseDate(ym + '-01'), { month: 'long', year: 'numeric', ...utc });
-  const monthDays = [];
-  for (let iso = ym + '-01'; iso.startsWith(ym); iso = addDays(iso, 1)) monthDays.push(iso);
+  const monthDaysOf = y => {
+    const out = [];
+    for (let iso = y + '-01'; iso.startsWith(y); iso = addDays(iso, 1)) out.push(iso);
+    return out;
+  };
+  const monthDays = monthDaysOf(ym);
 
-  // Tečky dne: hlavní typ + svátek + firma.
-  function dotsOf(iso) {
+  // Tečky dne: hlavní typ + svátek + firma. miss = nezapsané dny daného měsíce.
+  function dotsOf(iso, miss) {
     const day = days[iso];
-    if (!day) return missing.includes(iso) ? ['missing'] : [];
+    if (!day) return miss.includes(iso) ? ['missing'] : [];
     if (day.type !== 'work') return [day.type];
     const b = dayBreakdown(iso, day, settings);
     return [b.extra ? 'extra' : 'work', b.holiday && 'holiday', day.companies?.length && 'company'].filter(Boolean);
   }
-  const dots = Object.fromEntries(monthDays.map(iso => [iso, dotsOf(iso)]));
-  const usedDots = DOTS.filter(d => Object.values(dots).some(list => list.includes(d)));
+  const usedDots = DOTS.filter(d => monthDays.some(iso => dotsOf(iso, missing).includes(d)));
 
   const positive = PARTS.filter(k => k !== 'sick' && m[k] > 0);
   const sumPositive = positive.reduce((s, k) => s + m[k], 0);
@@ -40,9 +43,36 @@ export function render(root, ctx, param) {
   // Pondělí jako první den týdne (21. 9. 2026 je pondělí).
   const weekdayNames = [0, 1, 2, 3, 4, 5, 6].map(i =>
     formatDate(parseDate(addDays('2026-09-21', i)), { weekday: 'narrow', ...utc }));
-  // Řádky kalendáře = týdny od pondělí; u každého štítek D/K podle rozvrhu.
-  const weeks = [];
-  for (let monday = mondayOf(monthDays[0]); monday <= monthDays.at(-1); monday = addDays(monday, 7)) weeks.push(monday);
+
+  // Mřížka jednoho měsíce: řádky = týdny od pondělí, u každého štítek D/K podle rozvrhu.
+  function calendarGrid(y) {
+    const daysOfY = monthDaysOf(y);
+    const miss = y === ym ? missing : missingDays(y, days, settings, today);
+    const weeks = [];
+    for (let monday = mondayOf(daysOfY[0]); monday <= daysOfY.at(-1); monday = addDays(monday, 7)) weeks.push(monday);
+    return `
+      <div class="calendar">
+        <span></span>
+        ${weekdayNames.map(n => `<span class="cal-head">${n}</span>`).join('')}
+        ${weeks.map(monday => {
+          const type = weekType(monday, settings.schedule);
+          return `
+          <span class="cal-week" title="${t('week.' + type)} · ${t('week.number', { n: isoWeek(monday) })}">
+            <b>${t('week.' + type + 'Short')}</b><small>${isoWeek(monday)}</small>
+          </span>
+          ${[0, 1, 2, 3, 4, 5, 6].map(i => {
+            const iso = addDays(monday, i);
+            if (!iso.startsWith(y)) return '<span></span>';
+            const flags = dayFlags(iso, settings);
+            return `
+            <button class="cal-day ${iso === today ? 'today' : ''} ${flags.holiday ? 'is-holiday' : ''} ${flags.scheduled ? 'is-work' : ''}" data-iso="${iso}">
+              <span>${Number(iso.slice(8))}</span>
+              <span class="dots">${dotsOf(iso, miss).map(d => `<i class="dot dot-${d}"></i>`).join('')}</span>
+            </button>`;
+          }).join('')}`;
+        }).join('')}
+      </div>`;
+  }
 
   const companies = monthDays.flatMap(iso => (days[iso]?.type === 'work' ? days[iso].companies ?? [] : [])
     .map(c => ({ ...c, iso })));
@@ -80,26 +110,8 @@ export function render(root, ctx, param) {
         <strong class="month-title">${title}</strong>
         <button class="icon-btn" data-go="1" aria-label="${t('month.next')}">›</button>
       </div>
-      <div class="calendar">
-        <span></span>
-        ${weekdayNames.map(n => `<span class="cal-head">${n}</span>`).join('')}
-        ${weeks.map(monday => {
-          const type = weekType(monday, settings.schedule);
-          return `
-          <span class="cal-week" title="${t('week.' + type)} · ${t('week.number', { n: isoWeek(monday) })}">
-            <b>${t('week.' + type + 'Short')}</b><small>${isoWeek(monday)}</small>
-          </span>
-          ${[0, 1, 2, 3, 4, 5, 6].map(i => {
-            const iso = addDays(monday, i);
-            if (!iso.startsWith(ym)) return '<span></span>';
-            const flags = dayFlags(iso, settings);
-            return `
-            <button class="cal-day ${iso === today ? 'today' : ''} ${flags.holiday ? 'is-holiday' : ''} ${flags.scheduled ? 'is-work' : ''}" data-iso="${iso}">
-              <span>${Number(iso.slice(8))}</span>
-              <span class="dots">${dots[iso].map(d => `<i class="dot dot-${d}"></i>`).join('')}</span>
-            </button>`;
-          }).join('')}`;
-        }).join('')}
+      <div class="cal-strip">
+        ${[-1, 0, 1].map(n => `<div class="cal-panel">${calendarGrid(addMonths(ym, n))}</div>`).join('')}
       </div>
       ${usedDots.length ? `<ul class="dot-legend">
         ${usedDots.map(d => `<li><i class="dot dot-${d}"></i>${t('dot.' + d)}</li>`).join('')}
@@ -122,23 +134,38 @@ export function render(root, ctx, param) {
 
     <button class="btn-link" id="share">${t('share.button')}</button>`;
 
-  const goMonth = n => { location.hash = `#month/${addMonths(ym, n)}`; };
-  root.querySelectorAll('[data-go]').forEach(btn => btn.addEventListener('click', () => goMonth(Number(btn.dataset.go))));
   root.querySelector('#share').addEventListener('click', shareApp);
 
-  // Přejetí prstem po kalendáři: doleva = další měsíc, doprava = předchozí.
-  const cal = root.querySelector('.calendar');
-  let touch = null;
-  cal.addEventListener('touchstart', e => { touch = e.touches[0]; }, { passive: true });
-  cal.addEventListener('touchend', e => {
-    if (!touch) return;
-    const dx = e.changedTouches[0].clientX - touch.clientX;
-    const dy = e.changedTouches[0].clientY - touch.clientY;
-    touch = null;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) goMonth(dx < 0 ? 1 : -1);
-  });
+  // Kalendář jede s prstem: předchozí / aktuální / další měsíc vedle sebe s přichytáváním
+  // (scroll-snap). Po dojetí na sousední měsíc se obrazovka přepne na něj – jeho mřížka
+  // je pak prostřední panel, takže přechod je plynulý.
+  const strip = root.querySelector('.cal-strip');
+  strip.scrollLeft = strip.clientWidth;
+  const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let touching = false, settleTimer, switched = false;
+  const switchTo = n => {
+    if (switched) return;
+    switched = true;
+    location.hash = `#month/${addMonths(ym, n)}`;
+  };
+  const settle = () => {
+    if (touching) return;
+    const n = Math.round(strip.scrollLeft / strip.clientWidth) - 1;
+    if (n) switchTo(n);
+  };
 
-  cal.addEventListener('click', e => {
+  // Šipky: pás plynule odjede a měsíc se přepne po dojetí (nespoléhá na události posunu).
+  root.querySelectorAll('[data-go]').forEach(btn => btn.addEventListener('click', () => {
+    const n = Number(btn.dataset.go);
+    strip.scrollTo({ left: strip.clientWidth * (1 + n), behavior: smooth ? 'smooth' : 'auto' });
+    setTimeout(() => switchTo(n), smooth ? 350 : 0);
+  }));
+  strip.addEventListener('touchstart', () => { touching = true; }, { passive: true });
+  strip.addEventListener('touchend', () => { touching = false; clearTimeout(settleTimer); settleTimer = setTimeout(settle, 120); }, { passive: true });
+  strip.addEventListener('scroll', () => { clearTimeout(settleTimer); settleTimer = setTimeout(settle, 120); }, { passive: true });
+  strip.addEventListener('scrollend', settle);
+
+  strip.addEventListener('click', e => {
     const iso = e.target.closest('[data-iso]')?.dataset.iso;
     if (iso) location.hash = `#entry/${iso}`;
   });
